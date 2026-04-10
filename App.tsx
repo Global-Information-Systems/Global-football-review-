@@ -6,6 +6,9 @@ import ReviewPanel from './components/ReviewPanel';
 import PlayerProfileModal from './components/PlayerProfileModal';
 import ComparisonTray from './components/ComparisonTray';
 import ComparisonModal from './components/ComparisonModal';
+import ApiKeyModal from './components/ApiKeyModal';
+import AIChatBot from './components/AIChatBot';
+import ErrorBoundary from './components/captureownerstack';
 import { SelectableEntity, ViewMode, RealtimeMatch, GroundingSource } from './types';
 import * as geminiService from './services/geminiService';
 import { fetchGroundedRealtimeData } from './services/realtimeDatabase';
@@ -18,6 +21,7 @@ const App: React.FC = () => {
   const [isLoadingReview, setIsLoadingReview] = useState<boolean>(false);
   const [errorReview, setErrorReview] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('leagues');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   
   // Player Modal State
   const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
@@ -25,6 +29,15 @@ const App: React.FC = () => {
   // Comparison State
   const [comparisonList, setComparisonList] = useState<string[]>([]);
   const [isShowingComparison, setIsShowingComparison] = useState(false);
+
+  // API Key State
+  const [isShowingApiKeyModal, setIsShowingApiKeyModal] = useState(false);
+  const [apiKey, setApiKey] = useState<string>(localStorage.getItem('GEMINI_API_KEY') || '');
+
+  const handleSaveApiKey = (key: string) => {
+    localStorage.setItem('GEMINI_API_KEY', key);
+    setApiKey(key);
+  };
 
   const handleSelectEntity = useCallback((entity: SelectableEntity) => {
     setSelectedEntity(entity);
@@ -50,7 +63,7 @@ const App: React.FC = () => {
   }, []);
 
   const handleAddToCompare = useCallback((name: string) => {
-    setComparisonList(prev => {
+    setComparisonList((prev: string[]) => {
       if (prev.includes(name)) return prev;
       if (prev.length >= 3) return prev; // Limit to 3
       return [...prev, name];
@@ -58,7 +71,7 @@ const App: React.FC = () => {
   }, []);
 
   const handleRemoveFromCompare = useCallback((name: string) => {
-    setComparisonList(prev => prev.filter(n => n !== name));
+    setComparisonList((prev: string[]) => prev.filter((n: string) => n !== name));
   }, []);
 
   const handleClearComparison = useCallback(() => {
@@ -114,53 +127,83 @@ const App: React.FC = () => {
   }, [selectedEntity]);
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-emerald-950 relative overflow-hidden">
-      <Header onSearchPlayer={handlePlayerSearch} />
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar 
-          selectedEntity={selectedEntity} 
-          onSelectEntity={handleSelectEntity} 
-          viewMode={viewMode}
-          onViewChange={handleViewChange}
-        />
-        <ReviewPanel 
-          entity={selectedEntity} 
-          review={review}
-          realtimeMatches={realtimeMatches} 
-          groundingSources={groundingSources}
-          isLoadingReview={isLoadingReview} 
-          errorReview={errorReview} 
-          viewMode={viewMode}
-          onSelectEntity={handleSelectEntity}
-          onPlayerClick={handlePlayerSearch}
-        />
+    <ErrorBoundary fallback={
+      <div className="h-screen w-screen flex items-center justify-center bg-chocolate-dark text-white p-8">
+        <div className="max-w-md text-center">
+          <div className="text-6xl mb-6">⚠️</div>
+          <h2 className="text-2xl font-black mb-4 uppercase tracking-tight">Something went wrong</h2>
+          <p className="text-gray-400 text-sm mb-8">The application encountered an unexpected error. Please try refreshing the page.</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="bg-pitch-green hover:bg-pitch-green-light text-white px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg"
+          >
+            Refresh Application
+          </button>
+        </div>
       </div>
-
-      <ComparisonTray 
-        players={comparisonList} 
-        onRemove={handleRemoveFromCompare} 
-        onCompare={() => setIsShowingComparison(true)}
-        onClear={handleClearComparison}
-      />
-
-      {selectedPlayer && (
-        <PlayerProfileModal
-          playerName={selectedPlayer}
-          entity={selectedEntity || { name: 'Global Football', type: 'league' } as any}
-          onClose={() => setSelectedPlayer(null)}
-          onAddToCompare={handleAddToCompare}
-          isInComparison={comparisonList.includes(selectedPlayer)}
+    }>
+      <div className="flex flex-col h-screen bg-gradient-to-br from-chocolate-dark via-chocolate to-pitch-green-dark relative overflow-hidden">
+        <Header 
+          onSearchPlayer={handlePlayerSearch} 
+          onOpenSettings={() => setIsShowingApiKeyModal(true)} 
+          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
-      )}
+        <div className="flex flex-1 overflow-hidden">
+          <Sidebar 
+            selectedEntity={selectedEntity} 
+            onSelectEntity={handleSelectEntity} 
+            viewMode={viewMode}
+            onViewChange={handleViewChange}
+            isOpen={isSidebarOpen}
+          />
+          <ReviewPanel 
+            entity={selectedEntity} 
+            review={review}
+            realtimeMatches={realtimeMatches} 
+            groundingSources={groundingSources}
+            isLoadingReview={isLoadingReview} 
+            errorReview={errorReview} 
+            viewMode={viewMode}
+            onSelectEntity={handleSelectEntity}
+            onPlayerClick={handlePlayerSearch}
+          />
+        </div>
 
-      {isShowingComparison && (
-        <ComparisonModal 
-          playerNames={comparisonList}
-          entity={selectedEntity}
-          onClose={() => setIsShowingComparison(false)}
+        <ComparisonTray 
+          players={comparisonList} 
+          onRemove={handleRemoveFromCompare} 
+          onCompare={() => setIsShowingComparison(true)}
+          onClear={handleClearComparison}
         />
-      )}
-    </div>
+
+        {selectedPlayer && (
+          <PlayerProfileModal
+            playerName={selectedPlayer}
+            entity={selectedEntity || { name: 'Global Football', type: 'league' } as any}
+            onClose={() => setSelectedPlayer(null)}
+            onAddToCompare={handleAddToCompare}
+            isInComparison={comparisonList.includes(selectedPlayer)}
+          />
+        )}
+
+        {isShowingComparison && (
+          <ComparisonModal 
+            playerNames={comparisonList}
+            onClose={() => setIsShowingComparison(false)}
+          />
+        )}
+
+        {isShowingApiKeyModal && (
+          <ApiKeyModal
+            initialKey={apiKey}
+            onSave={handleSaveApiKey}
+            onClose={() => setIsShowingApiKeyModal(false)}
+          />
+        )}
+        
+        <AIChatBot />
+      </div>
+    </ErrorBoundary>
   );
 };
 

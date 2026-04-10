@@ -1,7 +1,8 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SelectableEntity, TabId, MatchInfo, RealtimeMatch, GroundingSource } from '../types';
+import { SelectableEntity, MatchInfo, RealtimeMatch, GroundingSource } from '../types';
+type TabId = any;
 import { TABS } from '../constants';
 import * as geminiService from '../services/geminiService';
 import LoadingSpinner from './LoadingSpinner';
@@ -16,10 +17,19 @@ import BettingStrategyDisplay from './BettingStrategyDisplay';
 import InteractiveText from './InteractiveText';
 import TacticsDisplay from './TacticsDisplay';
 import PredictionsDisplay from './PredictionsDisplay';
+import PlayerStatsDisplay from './PlayerStatsDisplay';
+import PlayerAnalysisDisplay from './PlayerAnalysisDisplay';
+import StandingsDisplay from './StandingsDisplay';
+import TeamStatsDisplay from './TeamStatsDisplay';
+import AILab from './AILab';
+import ImageAnalyzer from './ImageAnalyzer';
 import NationDatabase from './NationDatabase';
 import { ViewMode } from '../types';
 import MatchAnalysisModal from './MatchAnalysisModal';
 import RealtimeMatchesDisplay from './RealtimeMatchesDisplay';
+import EPLReviewGenerator from './EPLReviewGenerator';
+import DiscussionPanel from './DiscussionPanel';
+import ContactPanel from './ContactPanel';
 
 interface ReviewPanelProps {
   entity: SelectableEntity | null;
@@ -59,6 +69,10 @@ const ReviewPanel: React.FC<ReviewPanelProps> = ({
   const [tabsContent, setTabsContent] = useState<AllTabsState>({});
   const [analyzingMatch, setAnalyzingMatch] = useState<MatchInfo | null>(null);
 
+  // Use a ref to access the latest tabsContent without triggering re-renders of the callback
+  const tabsContentRef = useRef<AllTabsState>(tabsContent);
+  tabsContentRef.current = tabsContent;
+
   // Define localized tabs inside the component to respond to language changes
   const localizedTabs = TABS.map(tab => ({
     ...tab,
@@ -80,7 +94,9 @@ const ReviewPanel: React.FC<ReviewPanelProps> = ({
   };
 
   const loadTabData = useCallback(async (tabId: TabId) => {
-    if (!entity || (tabsContent[tabId] && tabsContent[tabId]?.data)) return;
+    // Check ref immediately to prevent race conditions during render
+    const currentTabState = tabsContentRef.current[tabId];
+    if (!entity || currentTabState?.data || currentTabState?.isLoading) return;
 
     let fetchFunction: (promptOrFocus: string) => Promise<any>;
     let promptFunction: ((entityFocus: string) => string) | null = null;
@@ -125,6 +141,22 @@ const ReviewPanel: React.FC<ReviewPanelProps> = ({
         fetchFunction = geminiService.fetchPredictions;
         promptFunction = geminiService.generatePredictionsPrompt;
         break;
+      case 'stats':
+        fetchFunction = geminiService.fetchPlayerStats;
+        promptFunction = geminiService.generatePlayerStatsPrompt;
+        break;
+      case 'team-stats':
+        fetchFunction = geminiService.fetchTeamStats;
+        promptFunction = geminiService.generateTeamStatsPrompt;
+        break;
+      case 'standings':
+        fetchFunction = geminiService.fetchStandings;
+        promptFunction = geminiService.generateStandingsPrompt;
+        break;
+      case 'strengths':
+        fetchFunction = geminiService.fetchPlayerAnalysis;
+        promptFunction = geminiService.generatePlayerAnalysisPrompt;
+        break;
       default:
         return;
     }
@@ -137,11 +169,16 @@ const ReviewPanel: React.FC<ReviewPanelProps> = ({
     } catch (err) {
       setTabState({ isLoading: false, error: err instanceof Error ? err.message : 'An unknown error occurred.' });
     }
-  }, [entity, tabsContent]);
+  }, [entity]);
 
   useEffect(() => {
-    if (entity && entity.type !== 'realtime' && activeTab !== 'review') {
-      loadTabData(activeTab);
+    if (entity && entity.type !== 'realtime') {
+      if (activeTab !== 'review') {
+        loadTabData(activeTab);
+      } else {
+        // Also load fixtures automatically for the review tab to show a summary
+        loadTabData('fixtures');
+      }
     }
   }, [activeTab, entity, loadTabData]);
 
@@ -179,6 +216,12 @@ const ReviewPanel: React.FC<ReviewPanelProps> = ({
       if (viewMode === 'realtime') {
         return renderRealtimeContent();
       }
+      if (viewMode === 'discussion') {
+        return <DiscussionPanel />;
+      }
+      if (viewMode === 'contact') {
+        return <ContactPanel />;
+      }
       return (
         <div className="text-center mt-20">
           <h2 className="text-3xl font-semibold text-gray-300 mb-4">{t('welcome_title')}</h2>
@@ -197,19 +240,70 @@ const ReviewPanel: React.FC<ReviewPanelProps> = ({
       case 'review':
         if (isLoadingReview) return <div className="flex justify-center items-center h-full"><LoadingSpinner /></div>;
         if (errorReview) return <div className="mt-8"><ErrorMessage message={errorReview} /></div>;
-        if (review) return (
-            <article className="bg-gray-800 p-6 sm:p-8 rounded-xl shadow-2xl">
-                <div className="flex items-center mb-6">
-                <h2 className="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-teal-500">
-                    {entity.name} {t('tabs.review')}
-                </h2>
-                </div>
-                <div className="prose prose-lg prose-invert max-w-none text-gray-300 leading-relaxed">
-                   <InteractiveText text={review} onPlayerClick={onPlayerClick} />
-                </div>
-            </article>
+        return (
+          <div className="space-y-8">
+            {entity.id === 'epl' && (
+              <EPLReviewGenerator onPlayerClick={onPlayerClick} />
+            )}
+            {review && (
+              <article className="bg-chocolate p-6 sm:p-8 rounded-xl shadow-2xl border border-white/5">
+                  <div className="flex items-center mb-6 gap-3">
+                  <span className="text-3xl">📝</span>
+                  <h2 className="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pitch-green-light to-blue-500">
+                      {entity.name} {t('tabs.review')}
+                  </h2>
+                  </div>
+                  {(entity.type === 'league' || entity.type === 'nation') && entity.description && (
+                    <div className="mb-8 p-4 bg-pitch-green/10 border-l-4 border-pitch-green rounded-r-xl italic text-pitch-green-light text-sm">
+                      {entity.description}
+                    </div>
+                  )}
+
+                  {/* Top Players Section */}
+                  <div className="mb-10">
+                    <h3 className="text-[10px] font-black text-pitch-green-light uppercase tracking-widest mb-4 flex items-center gap-2">
+                      <span>🌟</span> Key Players to Watch
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      {['Erling Haaland', 'Mohamed Salah', 'Bukayo Saka', 'Kevin De Bruyne'].map((player) => (
+                        <button 
+                          key={player}
+                          onClick={() => onPlayerClick(player)}
+                          className="group relative aspect-[3/4] rounded-2xl overflow-hidden bg-chocolate-dark border border-white/5 hover:border-pitch-green/50 transition-all shadow-lg"
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10" />
+                          <img 
+                            src={`https://picsum.photos/seed/${player.replace(' ', '')}/300/400`} 
+                            alt={player}
+                            referrerPolicy="no-referrer"
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-60 group-hover:opacity-100"
+                          />
+                          <div className="absolute bottom-3 left-3 right-3 z-20">
+                            <p className="text-[10px] font-black text-white uppercase tracking-tight truncate">{player}</p>
+                            <p className="text-[8px] font-bold text-pitch-green-light uppercase tracking-widest">View Profile</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="prose prose-lg prose-invert max-w-none text-gray-300 leading-relaxed">
+                     <InteractiveText text={review} onPlayerClick={onPlayerClick} />
+                  </div>
+              </article>
+            )}
+            
+            {tabsContent['fixtures']?.data && (
+              <section className="mt-12">
+                <FixturesDisplay 
+                  content={tabsContent['fixtures'].data} 
+                  leagueName={entity.name} 
+                  onAnalyzeMatch={handleOpenAnalysisModal} 
+                />
+              </section>
+            )}
+          </div>
         );
-        return null;
         
       case 'fixtures':
       case 'calendar':
@@ -219,18 +313,29 @@ const ReviewPanel: React.FC<ReviewPanelProps> = ({
       case 'betting':
       case 'tactics':
       case 'predictions':
+      case 'stats':
+      case 'team-stats':
+      case 'standings':
+      case 'strengths':
+      case 'ai-lab':
+         if (activeTab === 'ai-lab') return <AILab />;
          if (tabState?.isLoading) return <div className="flex justify-center items-center h-full"><LoadingSpinner /></div>;
          if (tabState?.error) return <div className="mt-8"><ErrorMessage message={tabState.error} /></div>;
          
          switch(activeTab) {
             case 'fixtures': return <FixturesDisplay content={tabState?.data} leagueName={entity.name} onAnalyzeMatch={handleOpenAnalysisModal} />;
             case 'calendar': return <CalendarDisplay fixtures={tabState?.data} entityName={entity.name} onAnalyzeMatch={handleOpenAnalysisModal} />;
-            case 'highlights': return <HighlightsDisplay content={tabState?.data} leagueName={entity.name} onPlayerClick={onPlayerClick} />;
+            case 'highlights': return <HighlightsDisplay highlights={tabState?.data} leagueName={entity.name} />;
             case 'insights': return <InsightsDisplay content={tabState?.data} leagueName={entity.name} onPlayerClick={onPlayerClick} />;
             case 'performance': return <PerformanceDataDisplay content={tabState?.data} leagueName={entity.name} />;
             case 'betting': return <BettingStrategyDisplay content={tabState?.data} leagueName={entity.name} />;
             case 'tactics': return <TacticsDisplay tacticalData={tabState?.data} leagueName={entity.name} />;
             case 'predictions': return <PredictionsDisplay predictions={tabState?.data} entityName={entity.name} />;
+            case 'stats': return <PlayerStatsDisplay stats={tabState?.data} entityName={entity.name} />;
+            case 'team-stats': return <TeamStatsDisplay stats={tabState?.data} leagueName={entity.name} />;
+            case 'standings': return <StandingsDisplay standings={tabState?.data} leagueName={entity.name} />;
+            case 'strengths': return <PlayerAnalysisDisplay analysis={tabState?.data} entityName={entity.name} />;
+            case 'ai-vision': return <ImageAnalyzer />;
          }
          return null;
 
@@ -240,7 +345,7 @@ const ReviewPanel: React.FC<ReviewPanelProps> = ({
   };
 
   return (
-    <main className="flex-1 p-6 overflow-y-auto bg-gray-800/30 backdrop-blur-md flex flex-col">
+    <main className="flex-1 p-6 overflow-y-auto bg-chocolate-dark/30 backdrop-blur-md flex flex-col">
       {entity && entity.type !== 'realtime' && (
         <div className="mb-6">
           <Tabs tabs={localizedTabs} activeTab={activeTab} onSelectTab={setActiveTab} />

@@ -17,18 +17,18 @@ const ComparisonTray: React.FC<ComparisonTrayProps> = ({ players, onRemove, onCo
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] animate-bounce-in">
       <div className="bg-gray-900/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-4 flex items-center gap-4 min-w-[320px] max-w-full">
         <div className="flex -space-x-3 overflow-hidden">
-          {players.map((name, i) => (
+          {players.map((name: string) => (
             <div 
               key={name} 
-              className="relative group h-12 w-12 rounded-full border-2 border-gray-900 bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-xs font-bold shadow-lg"
+              className="relative group h-12 w-12 rounded-full border-2 border-gray-900 bg-gradient-to-br from-pitch-green to-chocolate flex items-center justify-center text-white text-xs font-bold shadow-lg"
               title={name}
             >
-              {name.split(' ').map(n => n[0]).join('')}
+              {name.split(' ').map((n: string) => n[0]).join('')}
               <button 
                 onClick={() => onRemove(name)}
-                className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 rounded-full flex items-center justify-center scale-0 group-hover:scale-100 transition-transform shadow-md"
+                className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 rounded-full flex items-center justify-center scale-0 group-hover:scale-100 transition-transform shadow-md text-[10px]"
               >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                ❌
               </button>
             </div>
           ))}
@@ -52,7 +52,7 @@ const ComparisonTray: React.FC<ComparisonTrayProps> = ({ players, onRemove, onCo
             className={`
               px-5 py-2 rounded-lg text-sm font-bold transition-all shadow-lg
               ${players.length >= 2 
-                ? 'bg-emerald-500 hover:bg-emerald-400 text-white shadow-emerald-500/20' 
+                ? 'bg-pitch-green hover:bg-pitch-green-light text-white shadow-pitch-green-dark/20' 
                 : 'bg-gray-700 text-gray-500 cursor-not-allowed'}
             `}
           >

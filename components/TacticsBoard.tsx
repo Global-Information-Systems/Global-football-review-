@@ -54,20 +54,22 @@ const TacticsBoard: React.FC<TacticsBoardProps> = ({ players }) => {
                     return (
                         <g key={index} transform={`translate(${cx}, ${cy})`}>
                             <title>{player.position}</title>
-                            <circle 
-                                r="12" 
-                                fill={isGoalkeeper ? "#FBBF24" : "#1F2937"} 
-                                stroke="#FFFFFF" 
-                                strokeWidth="2" 
-                            />
                             <text 
                                 textAnchor="middle" 
                                 dy=".3em" 
-                                fill={isGoalkeeper ? "#1F2937" : "#FFFFFF"} 
-                                fontSize="10"
-                                fontWeight="bold"
+                                fontSize="20"
                             >
-                                {player.position.substring(0, 1)}
+                                {isGoalkeeper ? "🧤" : "🏃"}
+                            </text>
+                            <text 
+                                textAnchor="middle" 
+                                dy="1.8em" 
+                                fill="#FFFFFF" 
+                                fontSize="8"
+                                fontWeight="bold"
+                                className="drop-shadow-md"
+                            >
+                                {player.position}
                             </text>
                         </g>
                     );

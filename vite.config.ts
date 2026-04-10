@@ -7,6 +7,7 @@ export default defineConfig({
   define: {
     // Per Gemini API guidelines, the API key is expected to be in process.env.
     // This line makes it available in the client-side code during development and build.
+    'process.env.GEMINI_API_KEY': JSON.stringify(process.env.GEMINI_API_KEY),
     'process.env.API_KEY': JSON.stringify(process.env.API_KEY)
   }
 })

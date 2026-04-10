@@ -14,16 +14,16 @@ const InteractiveText: React.FC<InteractiveTextProps> = ({ text, onPlayerClick, 
   const playerRegex = /\[\[(.*?)\]\]/g;
 
   // Split the text into paragraphs
-  const paragraphs = text.split(/\\n\\n|\n\n/).map(p => p.trim()).filter(p => p.length > 0);
+  const paragraphs = text.split(/\\n\\n|\n\n/).map((p: string) => p.trim()).filter((p: string) => p.length > 0);
 
   return (
     <>
-      {paragraphs.map((paragraph, pIndex) => {
+      {paragraphs.map((paragraph: string, pIndex: number) => {
         const parts = paragraph.split(playerRegex);
         
         return (
           <p key={pIndex} className={paragraphClassName || "mb-4"}>
-            {parts.map((part, index) => {
+            {parts.map((part: string, index: number) => {
               // Every odd-indexed part is a captured player name
               if (index % 2 === 1) {
                 return (

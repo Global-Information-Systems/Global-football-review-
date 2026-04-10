@@ -96,11 +96,11 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({ onSearch }) => {
             setShowSuggestions(true);
           }}
           placeholder={t('search_placeholder')}
-          className="block w-full px-4 py-1.5 bg-black/20 border border-white/10 rounded-full text-sm placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-black/40 transition-all shadow-inner"
+          className="block w-full px-4 py-1.5 bg-black/20 border border-white/10 rounded-full text-sm placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-pitch-green focus:bg-black/40 transition-all shadow-inner"
         />
         {isLoading && (
           <div className="absolute right-3 top-2 flex items-center pointer-events-none">
-             <div className="h-3 w-3 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+             <div className="h-3 w-3 border-2 border-pitch-green border-t-transparent rounded-full animate-spin"></div>
           </div>
         )}
       </form>
@@ -114,9 +114,9 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({ onSearch }) => {
                 <button
                   key={`sug-${idx}`}
                   onClick={() => handleSelect(name)}
-                  className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-emerald-600/20 hover:text-emerald-400 rounded-lg transition-colors flex items-center gap-2 group"
+                  className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-pitch-green/20 hover:text-pitch-green-light rounded-lg transition-colors flex items-center gap-2 group"
                 >
-                  <svg className="w-3.5 h-3.5 text-gray-600 group-hover:text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                  <span className="text-xs">👤</span>
                   {name}
                 </button>
               ))}
@@ -132,7 +132,7 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({ onSearch }) => {
                   onClick={() => handleSelect(name)}
                   className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:bg-white/5 hover:text-white rounded-lg transition-colors flex items-center gap-2"
                 >
-                  <svg className="w-3.5 h-3.5 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <span className="text-xs opacity-40">🕒</span>
                   {name}
                 </button>
               ))}
