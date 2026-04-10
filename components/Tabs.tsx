@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { TabDefinition, TabId } from '../types';
+import { motion } from 'motion/react';
 
 interface TabsProps {
   tabs: TabDefinition[];
@@ -10,25 +11,30 @@ interface TabsProps {
 
 const Tabs: React.FC<TabsProps> = ({ tabs, activeTab, onSelectTab }) => {
   return (
-    <nav className="flex space-x-1 border-b-2 border-gray-700" aria-label="Tabs">
-      {tabs.map((tab) => (
+    <div className="flex bg-chocolate-dark/50 backdrop-blur-md p-1.5 rounded-2xl border border-white/5 overflow-x-auto no-scrollbar">
+      {tabs.map((tab: TabDefinition) => (
         <button
           key={tab.id}
           onClick={() => onSelectTab(tab.id)}
           className={`
-            px-4 py-3 font-medium text-sm rounded-t-lg transition-colors duration-150
-            focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-60
-            ${activeTab === tab.id
-              ? 'border-green-500 border-b-2 text-green-400 bg-gray-800'
-              : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50 border-b-2 border-transparent'
-            }
+            flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap relative
+            ${activeTab === tab.id 
+              ? 'text-white' 
+              : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}
           `}
           aria-current={activeTab === tab.id ? 'page' : undefined}
         >
           {tab.label}
+          {activeTab === tab.id && (
+            <motion.div 
+              layoutId="activeTab"
+              className="absolute inset-0 bg-pitch-green rounded-xl -z-10 shadow-lg shadow-pitch-green-dark/20"
+              transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+            />
+          )}
         </button>
       ))}
-    </nav>
+    </div>
   );
 };
 

@@ -12,7 +12,7 @@ interface CalendarDisplayProps {
 const CalendarDisplay: React.FC<CalendarDisplayProps> = ({ fixtures, entityName, onAnalyzeMatch }) => {
   const groupedFixtures = useMemo(() => {
     if (!fixtures) return {};
-    return fixtures.reduce((acc, fixture) => {
+    return fixtures.reduce((acc: Record<string, Fixture[]>, fixture: Fixture) => {
       const date = fixture.date;
       if (!acc[date]) {
         acc[date] = [];
@@ -45,7 +45,7 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({ fixtures, entityName,
         Upcoming Calendar - {entityName}
       </h3>
       <div className="space-y-8">
-        {sortedDates.map(date => (
+        {sortedDates.map((date: string) => (
           <div key={date} className="relative">
             <div className="absolute left-0 h-full w-0.5 bg-gray-700 ml-5"></div>
             <div className="flex items-center mb-4">
@@ -57,7 +57,7 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({ fixtures, entityName,
               </h4>
             </div>
             <div className="ml-5 pl-8 space-y-4 border-l-2 border-transparent">
-                {groupedFixtures[date].map((fixture, index) => (
+                {groupedFixtures[date].map((fixture: Fixture, index: number) => (
                     <div key={index} className="bg-gray-800 p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow">
                         <p className="font-semibold text-sm text-green-400 mb-2">{fixture.competition}</p>
                         <div className="flex items-center justify-between space-x-2">

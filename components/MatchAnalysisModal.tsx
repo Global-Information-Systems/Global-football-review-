@@ -6,6 +6,8 @@ import * as geminiService from '../services/geminiService';
 import LoadingSpinner from './LoadingSpinner';
 import ErrorMessage from './ErrorMessage';
 import InteractiveText from './InteractiveText';
+import CorrectScoreMatrixDisplay from './CorrectScoreMatrixDisplay';
+import { CorrectScoreMatrix } from '../types';
 
 interface MatchAnalysisModalProps {
   match: MatchInfo;
@@ -28,13 +30,28 @@ const MatchAnalysisModal: React.FC<MatchAnalysisModalProps> = ({ match, onClose,
     'halftime': { data: null, isLoading: false, error: null },
     'post-match': { data: null, isLoading: false, error: null },
   });
+  const [scoreMatrix, setScoreMatrix] = useState<CorrectScoreMatrix | null>(null);
+  const [isLoadingMatrix, setIsLoadingMatrix] = useState(false);
+
+  const loadMatrixData = useCallback(async () => {
+    if (scoreMatrix || isLoadingMatrix) return;
+    setIsLoadingMatrix(true);
+    try {
+      const data = await geminiService.fetchCorrectScoreMatrix(match.homeTeam, match.awayTeam);
+      setScoreMatrix(data);
+    } catch (err) {
+      console.error("Failed to load score matrix:", err);
+    } finally {
+      setIsLoadingMatrix(false);
+    }
+  }, [match, scoreMatrix, isLoadingMatrix]);
 
   const loadAnalysisData = useCallback(async (tab: AnalysisType) => {
     if (analysisContent[tab].data || analysisContent[tab].isLoading) {
       return;
     }
 
-    setAnalysisContent(prev => ({
+    setAnalysisContent((prev: Record<AnalysisType, AnalysisContent>) => ({
       ...prev,
       [tab]: { ...prev[tab], isLoading: true, error: null }
     }));
@@ -54,12 +71,12 @@ const MatchAnalysisModal: React.FC<MatchAnalysisModalProps> = ({ match, onClose,
 
     try {
       const data = await geminiService.fetchAnalysis(prompt);
-      setAnalysisContent(prev => ({
+      setAnalysisContent((prev: Record<AnalysisType, AnalysisContent>) => ({
         ...prev,
         [tab]: { data, isLoading: false, error: null }
       }));
     } catch (err) {
-      setAnalysisContent(prev => ({
+      setAnalysisContent((prev: Record<AnalysisType, AnalysisContent>) => ({
         ...prev,
         [tab]: { ...prev[tab], isLoading: false, error: err instanceof Error ? err.message : 'An unknown error occurred.' }
       }));
@@ -69,6 +86,10 @@ const MatchAnalysisModal: React.FC<MatchAnalysisModalProps> = ({ match, onClose,
   useEffect(() => {
     loadAnalysisData(activeTab);
   }, [activeTab, loadAnalysisData]);
+
+  useEffect(() => {
+    loadMatrixData();
+  }, [loadMatrixData]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -137,10 +158,10 @@ const MatchAnalysisModal: React.FC<MatchAnalysisModalProps> = ({ match, onClose,
         <div className="p-6 border-b border-gray-700">
              <button 
                 onClick={onClose}
-                className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
+                className="absolute top-4 right-4 text-2xl hover:scale-110 transition-transform z-10"
                 aria-label="Close match analysis"
             >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                ❌
             </button>
             <h2 id="match-analysis-title" className="text-2xl sm:text-3xl font-bold text-white mb-1">{match.homeTeam} vs {match.awayTeam}</h2>
             <p className="text-md text-gray-400 font-semibold">{match.context}{match.score ? ` - Final Score: ${match.score}` : ''}</p>
@@ -156,6 +177,7 @@ const MatchAnalysisModal: React.FC<MatchAnalysisModalProps> = ({ match, onClose,
         
         <div className="p-6 flex-grow">
             {renderContent()}
+            <CorrectScoreMatrixDisplay data={scoreMatrix} isLoading={isLoadingMatrix} />
         </div>
       </div>
     </div>

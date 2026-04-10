@@ -1,10 +1,11 @@
 
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SelectableEntity, PlayerProfile } from '../types';
+import { SelectableEntity, PlayerProfile, GeneratedImage } from '../types';
 import * as geminiService from '../services/geminiService';
 import LoadingSpinner from './LoadingSpinner';
 import ErrorMessage from './ErrorMessage';
+import { TeamLogo } from './TeamLogo';
 
 interface PlayerProfileModalProps {
   playerName: string;
@@ -17,16 +18,27 @@ interface PlayerProfileModalProps {
 const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({ playerName, entity, onClose, onAddToCompare, isInComparison }) => {
   const { t } = useTranslation();
   const [profile, setProfile] = useState<PlayerProfile | null>(null);
+  const [playerImageUrl, setPlayerImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'overview' | 'career'>('overview');
+  
+  // AI Image State
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [generatedImage, setGeneratedImage] = useState<GeneratedImage | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        const profileData = await geminiService.fetchPlayerProfile(playerName, entity.name);
+        const [profileData, imageUrl] = await Promise.all([
+          geminiService.fetchPlayerProfile(playerName, entity.name),
+          geminiService.fetchPlayerImage(playerName)
+        ]);
         setProfile(profileData);
+        setPlayerImageUrl(imageUrl);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An unknown error occurred.');
       } finally {
@@ -36,6 +48,38 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({ playerName, ent
 
     fetchProfile();
   }, [playerName, entity]);
+
+  const handleGenerateImage = async () => {
+    if (!profile) return;
+    setIsGeneratingImage(true);
+    try {
+      const img = await geminiService.generatePlayerImage(profile.name);
+      setGeneratedImage(img);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
+
+  const handleDownloadImage = () => {
+    if (!generatedImage) return;
+    
+    setDownloadProgress(0);
+    const interval = setInterval(() => {
+      setDownloadProgress(prev => {
+        if (prev === null || prev >= 100) {
+          clearInterval(interval);
+          const link = document.createElement('a');
+          link.href = generatedImage.url;
+          link.download = `${profile?.name || 'player'}_poster.png`;
+          link.click();
+          return null;
+        }
+        return prev + 10;
+      });
+    }, 100);
+  };
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -63,10 +107,10 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({ playerName, ent
       >
         <button 
             onClick={onClose}
-            className="absolute top-3 right-3 text-gray-400 hover:text-white transition-colors z-10"
+            className="absolute top-3 right-3 text-2xl hover:scale-110 transition-transform z-10"
             aria-label="Close player profile"
         >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            ❌
         </button>
 
         {isLoading && <div className="p-16"><LoadingSpinner /></div>}
@@ -74,47 +118,186 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({ playerName, ent
         
         {!isLoading && !error && profile && (
           <div className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h2 id="player-profile-title" className="text-3xl sm:text-4xl font-bold text-white mb-1">{profile.name}</h2>
-                  <p className="text-lg text-emerald-400 font-semibold">{profile.position} - {profile.club}</p>
+              <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
+                <div className="flex items-center gap-6">
+                  <div className="relative group">
+                    <div className="h-24 w-24 rounded-2xl bg-gradient-to-tr from-pitch-green to-chocolate flex items-center justify-center text-3xl font-black text-white shadow-xl border-2 border-white/10 group-hover:scale-105 transition-transform overflow-hidden">
+                      {generatedImage ? (
+                        <img src={generatedImage.url} alt={profile.name} className="w-full h-full object-cover" />
+                      ) : playerImageUrl ? (
+                        <img src={playerImageUrl} alt={profile.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      ) : (
+                        playerName.split(' ').map(n => n[0]).join('')
+                      )}
+                    </div>
+                    {generatedImage && (
+                      <button 
+                        onClick={handleDownloadImage}
+                        className="absolute -bottom-2 -right-2 bg-white text-pitch-green-dark p-1 rounded-full shadow-lg border border-gray-200 hover:bg-pitch-green/5 transition-colors text-xs"
+                        title="Download HD Poster"
+                      >
+                        📥
+                      </button>
+                    )}
+                  </div>
+                  <div>
+                    <h2 id="player-profile-title" className="text-3xl font-black text-white leading-tight">{profile.name}</h2>
+                    <div className="flex items-center gap-2 mt-1">
+                      <TeamLogo teamName={profile.club} className="w-4 h-4 rounded-full object-cover" />
+                      <p className="text-pitch-green-light font-bold uppercase tracking-widest text-xs">{profile.position} · {profile.club}</p>
+                    </div>
+                    <div className="mt-2 flex gap-2">
+                       <button
+                         onClick={handleGenerateImage}
+                         disabled={isGeneratingImage}
+                         className="text-[9px] font-black uppercase tracking-widest bg-white/5 hover:bg-white/10 text-pitch-green-light border border-pitch-green/30 px-3 py-1.5 rounded-lg flex items-center gap-2 transition-all disabled:opacity-50"
+                       >
+                         {isGeneratingImage ? (
+                           <>
+                             <span className="w-2 h-2 border border-current border-t-transparent animate-spin rounded-full" />
+                             Painting...
+                           </>
+                         ) : (
+                           <>
+                             🎨 Generate AI Artwork
+                           </>
+                         )}
+                       </button>
+                    </div>
+                  </div>
                 </div>
-                <button
-                  onClick={() => onAddToCompare(profile.name)}
-                  disabled={isInComparison}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-lg ${
-                    isInComparison 
-                    ? 'bg-gray-700 text-gray-400 cursor-not-allowed' 
-                    : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20 active:scale-95'
-                  }`}
-                >
-                  {isInComparison ? (
-                    <>
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-                      {t('player.queued')}
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
-                      {t('player.compare')}
-                    </>
-                  )}
-                </button>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => onAddToCompare(profile.name)}
+                    disabled={isInComparison}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg ${
+                      isInComparison 
+                      ? 'bg-gray-700 text-gray-400 cursor-not-allowed border border-white/5' 
+                      : 'bg-pitch-green hover:bg-pitch-green-light text-white shadow-pitch-green-dark/20 active:scale-95 border border-pitch-green-light/20'
+                    }`}
+                  >
+                    {isInComparison ? '✅ Queued' : '⚔️ Compare'}
+                  </button>
+                </div>
               </div>
               
-              <div className="mt-6">
-                  <h3 className="text-xl font-semibold text-gray-200 mb-2">{t('player.key_strengths')}</h3>
-                  <div className="flex flex-wrap gap-2">
-                      {profile.strengths.map((strength, index) => (
-                          <span key={index} className="bg-gray-700 text-emerald-300 text-sm font-medium px-3 py-1 rounded-full border border-white/5">{strength}</span>
-                      ))}
+              {downloadProgress !== null && (
+                <div className="mb-6 p-4 bg-pitch-green/10 border border-pitch-green/20 rounded-2xl animate-fade-in">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-pitch-green-light">Preparing HD Download</span>
+                    <span className="text-[10px] font-black text-white">{downloadProgress}%</span>
                   </div>
+                  <div className="h-1.5 w-full bg-black/20 rounded-full overflow-hidden">
+                    <div className="h-full bg-pitch-green transition-all duration-300" style={{ width: `${downloadProgress}%` }} />
+                  </div>
+                  <p className="text-[9px] text-pitch-green/60 mt-2 italic">Est. speed: 4.2 MB/s · Fetching from global CDN...</p>
+                </div>
+              )}
+
+              <div className="flex gap-4 border-b border-gray-700 mb-6">
+                <button 
+                  onClick={() => setActiveTab('overview')}
+                  className={`pb-2 text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'overview' ? 'text-pitch-green-light border-b-2 border-pitch-green' : 'text-gray-500 hover:text-gray-300'}`}
+                >
+                  Overview
+                </button>
+                <button 
+                  onClick={() => setActiveTab('career')}
+                  className={`pb-2 text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'career' ? 'text-pitch-green-light border-b-2 border-pitch-green' : 'text-gray-500 hover:text-gray-300'}`}
+                >
+                  Career History
+                </button>
               </div>
 
-              <div className="mt-6">
-                  <h3 className="text-xl font-semibold text-gray-200 mb-2">{t('player.recent_performance')}</h3>
-                  <p className="text-gray-300 leading-relaxed bg-gray-900/40 p-4 rounded-xl border border-white/5">{profile.recentPerformance}</p>
-              </div>
+              {activeTab === 'overview' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-6">
+                    <section>
+                      <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                        💪 {t('player.key_strengths')}
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {profile.strengths.map((strength, index) => (
+                          <span key={index} className="bg-chocolate/60 text-pitch-green-light text-[10px] font-black uppercase px-3 py-1.5 rounded-lg border border-white/5">{strength}</span>
+                        ))}
+                      </div>
+                    </section>
+                  </div>
+
+                  <section>
+                    <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                      🎭 {t('player.recent_performance')}
+                    </h3>
+                    <div className="bg-gray-900/40 p-5 rounded-2xl border border-white/5 shadow-inner">
+                      <p className="text-sm text-gray-300 leading-relaxed font-medium italic">"{profile.recentPerformance}"</p>
+                    </div>
+                  </section>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {profile.careerHistory && profile.careerHistory.length > 0 ? (
+                    <div className="space-y-4">
+                      {profile.careerHistory.map((entry, idx) => (
+                        <div key={idx} className="bg-gray-900/40 rounded-2xl border border-white/5 p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-gray-900/60 transition-colors">
+                          <div className="flex items-center gap-4">
+                            <TeamLogo teamName={entry.club} className="w-10 h-10 rounded-full object-cover border border-white/10" />
+                            <div>
+                              <h4 className="text-white font-bold text-sm">{entry.club}</h4>
+                              <p className="text-gray-500 text-[10px] font-medium uppercase tracking-widest">{entry.years}</p>
+                            </div>
+                          </div>
+                          <div className="flex gap-6">
+                            <div className="text-center">
+                              <p className="text-pitch-green-light font-black text-lg leading-none">{entry.appearances}</p>
+                              <p className="text-gray-600 text-[8px] font-black uppercase tracking-tighter">Apps</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-pitch-green-light font-black text-lg leading-none">{entry.goals}</p>
+                              <p className="text-gray-600 text-[8px] font-black uppercase tracking-tighter">Goals</p>
+                            </div>
+                            {entry.assists !== undefined && (
+                              <div className="text-center">
+                                <p className="text-pitch-green-light font-black text-lg leading-none">{entry.assists}</p>
+                                <p className="text-gray-600 text-[8px] font-black uppercase tracking-tighter">Assists</p>
+                              </div>
+                            )}
+                          </div>
+                          {entry.achievements && entry.achievements.length > 0 && (
+                            <div className="w-full sm:w-auto flex flex-wrap gap-1 mt-2 sm:mt-0">
+                              {entry.achievements.map((ach, aIdx) => (
+                                <span key={aIdx} className="text-[8px] bg-pitch-green/10 text-pitch-green-light px-2 py-0.5 rounded-full border border-pitch-green/20">
+                                  🏆 {ach}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 bg-gray-900/20 rounded-3xl border border-dashed border-white/5">
+                      <p className="text-gray-500 text-xs italic">No detailed career history available for this player.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {generatedImage && (
+                <section className="mt-8 border-t border-white/5 pt-8 animate-fade-in">
+                  <h3 className="text-[10px] font-black text-pitch-green uppercase tracking-widest mb-4 flex items-center gap-2">
+                    🖼️ AI Generation Meta
+                  </h3>
+                  <div className="bg-black/20 p-4 rounded-xl border border-white/5">
+                    <p className="text-[9px] text-gray-500 font-mono break-all mb-2">
+                      Source: {generatedImage.url.substring(0, 100)}...
+                    </p>
+                    <p className="text-[10px] text-gray-400 font-bold">
+                      Prompt: {generatedImage.prompt}
+                    </p>
+                  </div>
+                </section>
+              )}
           </div>
         )}
       </div>

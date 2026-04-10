@@ -1,12 +1,20 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { GroundedMatchData, GroundingSource, RealtimeMatch } from "../types";
+import { GroundedMatchData, GroundingSource } from "../types";
 
-// Always initialize using process.env.API_KEY directly in the named parameter object.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+// Helper to get the current API key
+const getApiKey = () => {
+  const storedKey = localStorage.getItem('GEMINI_API_KEY');
+  return storedKey || process.env.GEMINI_API_KEY || '';
+};
+
+// Helper to get AI instance
+const getAiInstance = () => {
+  return new GoogleGenAI({ apiKey: getApiKey() });
+};
 
 /**
- * Service Database Helper for fetching Real-time Grounded data.
+ * Service Database Helper for fetching Real-time Grounded data using Google Search.
  */
 export const fetchGroundedRealtimeData = async (focus: string): Promise<GroundedMatchData> => {
   const prompt = `Search for actual current football match information for: ${focus}. 
@@ -14,6 +22,7 @@ export const fetchGroundedRealtimeData = async (focus: string): Promise<Grounded
     Focus on major global leagues and international tournaments.
     Return the data as a clean JSON array under a "matches" key.`;
 
+  const ai = getAiInstance();
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: prompt,

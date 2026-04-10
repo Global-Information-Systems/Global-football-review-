@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RealtimeMatch, MatchInfo, GroundingSource } from '../types';
+import { TeamLogo } from './TeamLogo';
 
 interface RealtimeMatchesDisplayProps {
   matches: RealtimeMatch[] | null;
@@ -11,40 +12,44 @@ interface RealtimeMatchesDisplayProps {
 }
 
 const getStatusBadge = (status: RealtimeMatch['status'], t: any) => {
-  const baseClasses = "px-2.5 py-1 text-xs font-semibold leading-tight rounded-full";
+  const baseClasses = "px-3 py-1 text-[10px] font-black leading-tight rounded-full uppercase tracking-widest shadow-sm";
   switch (status) {
     case 'Live':
-      return <span className={`${baseClasses} text-red-100 bg-red-600 animate-pulse`}>{t('live')}</span>;
+      return <span className={`${baseClasses} text-white bg-red-600 flex items-center gap-1.5 animate-pulse`}><span className="w-1.5 h-1.5 rounded-full bg-white" />{t('live')}</span>;
     case 'HT':
       return <span className={`${baseClasses} text-yellow-900 bg-yellow-400`}>HT</span>;
     case 'FT':
-      return <span className={`${baseClasses} text-gray-100 bg-gray-600`}>FT</span>;
+      return <span className={`${baseClasses} text-white bg-gray-700`}>FT</span>;
     case 'Scheduled':
-      return <span className={`${baseClasses} text-blue-800 bg-blue-300`}>{t('upcoming')}</span>;
+      return <span className={`${baseClasses} text-white bg-pitch-green`}>{t('upcoming')}</span>;
     case 'Postponed':
-       return <span className={`${baseClasses} text-orange-800 bg-orange-300`}>PST</span>;
-    case 'Cancelled':
-       return <span className={`${baseClasses} text-red-800 bg-red-300`}>CANC</span>;
+       return <span className={`${baseClasses} text-orange-200 bg-orange-900/50`}>PST</span>;
     default:
-      return <span className={`${baseClasses} text-gray-800 bg-gray-300`}>{status}</span>;
+      return <span className={`${baseClasses} text-gray-400 bg-gray-800`}>{status}</span>;
   }
 };
 
-const ITEMS_PER_PAGE = 6;
+const ITEMS_PER_PAGE = 8;
 
 const RealtimeMatchesDisplay: React.FC<RealtimeMatchesDisplayProps> = ({ matches, sources, title, onAnalyzeMatch }) => {
   const { t } = useTranslation();
   const [currentPage, setCurrentPage] = useState(1);
 
   if (!matches) {
-    return <p className="text-gray-400 italic mt-4">No match information available for {title}.</p>;
+    return (
+      <div className="flex flex-col items-center justify-center p-12 bg-gray-900/40 rounded-3xl border border-white/5">
+        <div className="text-4xl mb-4 animate-bounce">📡</div>
+        <p className="text-gray-400 font-bold uppercase tracking-widest text-sm">Searching for match data...</p>
+      </div>
+    );
   }
 
   if (matches.length === 0) {
     return (
-        <div className="text-center bg-gray-800/50 p-8 rounded-xl">
-            <h3 className="text-2xl font-semibold text-gray-300 mb-2">No Matches Found</h3>
-            <p className="text-gray-400">There are no {title.toLowerCase()} to display at this time.</p>
+        <div className="text-center bg-gray-800/50 p-12 rounded-3xl border border-dashed border-gray-700">
+            <div className="text-5xl mb-4">📭</div>
+            <h3 className="text-2xl font-black text-white mb-2">No Active Matches</h3>
+            <p className="text-gray-400">There are no {title.toLowerCase()} currently available for display.</p>
         </div>
     );
   }
@@ -53,118 +58,104 @@ const RealtimeMatchesDisplay: React.FC<RealtimeMatchesDisplayProps> = ({ matches
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedMatches = matches.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-  const handleNext = () => {
-    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
-  };
-
-  const handlePrev = () => {
-    if (currentPage > 1) setCurrentPage(currentPage - 1);
-  };
-
   return (
     <article className="space-y-6 animate-fade-in">
-      <div className="bg-gray-800/60 rounded-xl shadow-2xl backdrop-blur-sm overflow-hidden border border-white/5">
-        <div className="p-6 sm:p-8 border-b border-gray-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <h3 className="text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-teal-500">
-            {title}
-          </h3>
-          <div className="flex items-center gap-2 text-xs text-gray-400">
-            <span className="bg-gray-700/50 px-2 py-1 rounded border border-white/5">
-              {matches.length} {t('match_center')}
+      <div className="bg-gray-800/40 rounded-3xl shadow-2xl backdrop-blur-xl border border-white/5 overflow-hidden">
+        <div className="p-8 border-b border-gray-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="text-4xl">🏟️</div>
+            <div>
+              <h3 className="text-3xl font-black text-white leading-tight">
+                {title}
+              </h3>
+              <p className="text-xs text-pitch-green font-bold uppercase tracking-widest">
+                Real-time Data Active
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="bg-pitch-green/10 text-pitch-green px-4 py-1.5 rounded-full text-xs font-black border border-pitch-green/20">
+              {matches.length} Total Matches
             </span>
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-700/50">
-            <thead className="bg-gray-900/50">
-              <tr>
-                <th scope="col" className="px-6 py-4 text-left text-[10px] font-bold text-gray-500 uppercase tracking-widest">{t('match.competition')}</th>
-                <th scope="col" className="px-6 py-4 text-left text-[10px] font-bold text-gray-500 uppercase tracking-widest">{t('match.match')}</th>
-                <th scope="col" className="px-6 py-4 text-center text-[10px] font-bold text-gray-500 uppercase tracking-widest">{t('match.score_time')}</th>
-                <th scope="col" className="px-6 py-4 text-center text-[10px] font-bold text-gray-500 uppercase tracking-widest">{t('match.status')}</th>
-                <th scope="col" className="relative px-6 py-4"><span className="sr-only">{t('analyze')}</span></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-700/30">
-              {paginatedMatches.map((match, index) => (
-                <tr key={startIndex + index} className="hover:bg-emerald-500/5 transition-colors group">
-                  <td className="px-6 py-5 text-sm text-gray-400 whitespace-nowrap">
-                    <div className="flex flex-col">
-                      <span className="font-semibold text-gray-300">{match.competition}</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-gray-700/30">
+          {paginatedMatches.map((match, index) => (
+            <div key={startIndex + index} className="bg-chocolate/40 p-6 flex flex-col justify-between group hover:bg-pitch-green/5 transition-all">
+              <div className="flex justify-between items-start mb-4">
+                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest truncate max-w-[150px]">
+                  🏆 {match.competition}
+                </span>
+                {getStatusBadge(match.status, t)}
+              </div>
+
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex-1 flex flex-col items-center gap-2">
+                  <TeamLogo teamName={match.homeTeam} className="w-12 h-12 rounded-2xl shadow-lg border border-white/5 group-hover:scale-110 transition-transform object-cover" />
+                  <span className="text-sm font-black text-white text-center line-clamp-2">{match.homeTeam}</span>
+                </div>
+
+                <div className="flex flex-col items-center gap-1 px-4">
+                  {match.status === 'Scheduled' ? (
+                    <span className="text-xs font-bold text-pitch-green-light bg-pitch-green/10 px-3 py-1 rounded-lg">
+                      {match.time}
+                    </span>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <span className="text-3xl font-black text-white">{match.score?.split('-')[0] || 0}</span>
+                      <span className="text-gray-600 font-bold">:</span>
+                      <span className="text-3xl font-black text-white">{match.score?.split('-')[1] || 0}</span>
                     </div>
-                  </td>
-                  <td className="px-6 py-5 text-sm text-gray-200">
-                      <div className="font-bold">{match.homeTeam}</div>
-                      <div className="text-gray-500 text-xs">vs {match.awayTeam}</div>
-                  </td>
-                  <td className="px-6 py-5 text-sm text-center font-mono whitespace-nowrap">
-                      <div className="bg-black/40 px-3 py-1 rounded-lg inline-block border border-white/5 text-emerald-400">
-                        {match.status === 'Live' || match.status === 'HT' || match.status === 'FT' ? match.score : match.time}
-                      </div>
-                  </td>
-                  <td className="px-6 py-5 text-center whitespace-nowrap">
-                      <div className="flex flex-col items-center gap-1">
-                        {getStatusBadge(match.status, t)}
-                        {(match.status === 'Live' && match.time) && (
-                          <span className="text-[10px] text-red-500 font-bold animate-pulse">{match.time}'</span>
-                        )}
-                      </div>
-                  </td>
-                  <td className="px-6 py-5 whitespace-nowrap text-right">
-                    <button
-                      onClick={() => onAnalyzeMatch({
-                        homeTeam: match.homeTeam,
-                        awayTeam: match.awayTeam,
-                        score: match.score,
-                        context: match.competition,
-                        isFuture: match.status === 'Scheduled',
-                        entityName: title,
-                        date: match.status === 'Scheduled' ? match.time : undefined,
-                      })}
-                      className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold text-emerald-500 hover:bg-emerald-500 hover:text-white border border-emerald-500/30 transition-all shadow-lg hover:shadow-emerald-500/20 active:scale-95"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-                      {t('analyze')}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  )}
+                  {match.status === 'Live' && match.time && (
+                    <span className="text-[10px] font-black text-red-500 animate-pulse">{match.time}'</span>
+                  )}
+                </div>
+
+                <div className="flex-1 flex flex-col items-center gap-2">
+                  <TeamLogo teamName={match.awayTeam} className="w-12 h-12 rounded-2xl shadow-lg border border-white/5 group-hover:scale-110 transition-transform object-cover" />
+                  <span className="text-sm font-black text-white text-center line-clamp-2">{match.awayTeam}</span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => onAnalyzeMatch({
+                  homeTeam: match.homeTeam,
+                  awayTeam: match.awayTeam,
+                  score: match.score,
+                  context: match.competition,
+                  isFuture: match.status === 'Scheduled',
+                  entityName: title,
+                  date: match.status === 'Scheduled' ? match.time : undefined,
+                })}
+                className="w-full py-2.5 rounded-xl bg-chocolate hover:bg-pitch-green text-gray-400 hover:text-white text-xs font-black uppercase tracking-widest transition-all border border-white/5 shadow-lg active:scale-95"
+              >
+                Detailed Analysis
+              </button>
+            </div>
+          ))}
         </div>
 
-        {/* Pagination Footer */}
         {totalPages > 1 && (
-          <div className="bg-gray-900/50 px-6 py-4 border-t border-gray-700/50 flex items-center justify-between">
-            <div className="text-xs text-gray-500">
-              Showing <span className="text-gray-300 font-bold">{startIndex + 1}</span> to <span className="text-gray-300 font-bold">{Math.min(startIndex + ITEMS_PER_PAGE, matches.length)}</span> of <span className="text-gray-300 font-bold">{matches.length}</span> results
-            </div>
+          <div className="bg-gray-900/80 px-8 py-4 border-t border-gray-700/50 flex items-center justify-between">
+            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
+              Page {currentPage} of {totalPages}
+            </span>
             <div className="flex gap-2">
               <button 
-                onClick={handlePrev}
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className={`p-2 rounded-lg border transition-all ${currentPage === 1 ? 'border-gray-800 text-gray-700 cursor-not-allowed' : 'border-gray-700 text-gray-300 hover:bg-gray-800 active:scale-90'}`}
+                className={`p-2 rounded-xl transition-all ${currentPage === 1 ? 'opacity-20 cursor-not-allowed' : 'bg-chocolate hover:bg-pitch-green text-white'}`}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+                ⬅️
               </button>
-              <div className="flex gap-1">
-                {Array.from({ length: totalPages }).map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setCurrentPage(idx + 1)}
-                    className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${currentPage === idx + 1 ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
-                  >
-                    {idx + 1}
-                  </button>
-                ))}
-              </div>
               <button 
-                onClick={handleNext}
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className={`p-2 rounded-lg border transition-all ${currentPage === totalPages ? 'border-gray-800 text-gray-700 cursor-not-allowed' : 'border-gray-700 text-gray-300 hover:bg-gray-800 active:scale-90'}`}
+                className={`p-2 rounded-xl transition-all ${currentPage === totalPages ? 'opacity-20 cursor-not-allowed' : 'bg-chocolate hover:bg-pitch-green text-white'}`}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
+                ➡️
               </button>
             </div>
           </div>
@@ -172,11 +163,11 @@ const RealtimeMatchesDisplay: React.FC<RealtimeMatchesDisplayProps> = ({ matches
       </div>
 
       {sources && sources.length > 0 && (
-        <div className="bg-gray-900/40 p-5 rounded-xl border border-white/5 animate-fade-in delay-150">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-            <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{t('match.verified_sources')}</h4>
-          </div>
+        <div className="bg-pitch-green/5 p-6 rounded-3xl border border-pitch-green/10">
+          <h4 className="text-[10px] font-black text-pitch-green/60 uppercase tracking-widest mb-4 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-pitch-green" />
+            Live Data Intelligence Sources
+          </h4>
           <div className="flex flex-wrap gap-2">
             {sources.map((source, idx) => (
               <a 
@@ -184,11 +175,9 @@ const RealtimeMatchesDisplay: React.FC<RealtimeMatchesDisplayProps> = ({ matches
                 href={source.uri}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group inline-flex items-center gap-2 px-3 py-2 bg-gray-800/50 hover:bg-emerald-600/10 text-xs text-gray-400 hover:text-emerald-400 rounded-lg border border-white/5 transition-all"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-chocolate/50 hover:bg-pitch-green/10 rounded-xl border border-white/5 text-xs text-gray-400 hover:text-pitch-green-light transition-all font-bold"
               >
-                <svg className="w-3.5 h-3.5 text-gray-600 group-hover:text-emerald-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
-                <span className="max-w-[180px] truncate">{source.title}</span>
-                <svg className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                🔗 {source.title}
               </a>
             ))}
           </div>

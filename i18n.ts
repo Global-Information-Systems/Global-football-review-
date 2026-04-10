@@ -64,6 +64,11 @@ const resources = {
         "pre_match": "Pre-Match",
         "halftime": "Halftime",
         "post_match": "Post-Match"
+      },
+      "media": {
+        "download_speed": "Fetch Speed",
+        "ai_poster": "AI Poster",
+        "hd_available": "HD Download Available"
       }
     }
   },
@@ -127,6 +132,11 @@ const resources = {
         "pre_match": "Pre-Partido",
         "halftime": "Medio Tiempo",
         "post_match": "Post-Partido"
+      },
+      "media": {
+        "download_speed": "Velocidad de descarga",
+        "ai_poster": "Póster de IA",
+        "hd_available": "Descarga HD disponible"
       }
     }
   },
@@ -190,6 +200,11 @@ const resources = {
         "pre_match": "Avant-match",
         "halftime": "Mi-temps",
         "post_match": "Après-match"
+      },
+      "media": {
+        "download_speed": "Vitesse de téléchargement",
+        "ai_poster": "Affiche IA",
+        "hd_available": "Téléchargement HD disponible"
       }
     }
   }

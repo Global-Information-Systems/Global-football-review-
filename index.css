@@ -4,6 +4,7 @@
 
 body {
   font-family: 'Inter', sans-serif;
+  @apply bg-chocolate-dark text-white;
 }
 
 /* Custom scrollbar for webkit browsers */
@@ -11,12 +12,11 @@ body {
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #2d3748; /* gray-800 */
+  @apply bg-chocolate-dark;
 }
 ::-webkit-scrollbar-thumb {
-  background: #4a5568; /* gray-600 */
-  border-radius: 4px;
+  @apply bg-chocolate rounded-full border-2 border-chocolate-dark;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #718096; /* gray-500 */
+  @apply bg-chocolate-light;
 }

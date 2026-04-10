@@ -2,6 +2,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Prediction } from '../types';
+import { TeamLogo } from './TeamLogo';
 
 interface PredictionsDisplayProps {
   predictions: Prediction[] | null;
@@ -20,7 +21,7 @@ const PredictionsDisplay: React.FC<PredictionsDisplayProps> = ({ predictions, en
   }
 
   const getConfidenceColor = (score: number) => {
-    if (score >= 75) return 'bg-emerald-500';
+    if (score >= 75) return 'bg-pitch-green';
     if (score >= 50) return 'bg-amber-500';
     return 'bg-rose-500';
   };
@@ -28,34 +29,36 @@ const PredictionsDisplay: React.FC<PredictionsDisplayProps> = ({ predictions, en
   return (
     <article className="bg-gray-800/50 p-6 sm:p-8 rounded-xl shadow-2xl backdrop-blur-sm animate-fade-in">
       <div className="flex items-center justify-between mb-8">
-        <h3 className="text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500">
+        <h3 className="text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pitch-green-light to-cyan-500">
           {t('match.forecasts')}
         </h3>
-        <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-          <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">{t('match.experimental')}</span>
+        <div className="px-3 py-1 bg-pitch-green/10 border border-pitch-green/20 rounded-full">
+          <span className="text-[10px] font-bold text-pitch-green-light uppercase tracking-widest">{t('match.experimental')}</span>
         </div>
       </div>
 
       <div className="space-y-6">
-        {predictions.map((pred, idx) => (
-          <div key={idx} className="bg-gray-900/60 border border-white/5 rounded-2xl overflow-hidden hover:border-emerald-500/30 transition-all group">
+        {predictions.map((pred: Prediction, idx: number) => (
+          <div key={idx} className="bg-chocolate/60 border border-white/5 rounded-2xl overflow-hidden hover:border-pitch-green/30 transition-all group">
             <div className="p-5 flex flex-col md:flex-row md:items-center gap-6">
               {/* Teams & Score */}
               <div className="flex-1">
                 <div className="flex items-center justify-between md:justify-start gap-4 mb-2">
-                  <div className="flex-1 text-right md:flex-initial">
-                    <p className="text-lg font-bold text-white truncate">{pred.homeTeam}</p>
+                  <div className="flex-1 flex items-center justify-end gap-3 md:flex-initial">
+                    <p className="text-lg font-bold text-white truncate text-right">{pred.homeTeam}</p>
+                    <TeamLogo teamName={pred.homeTeam} className="w-8 h-8 rounded-full object-cover bg-gray-700" />
                   </div>
                   <div className="flex flex-col items-center gap-1 min-w-[60px]">
                     <span className="text-[10px] font-bold text-gray-500 uppercase">VS</span>
                     {pred.suggestedScore && (
-                      <span className="px-2 py-0.5 bg-gray-800 rounded text-xs font-mono text-emerald-400 border border-white/5">
+                      <span className="px-2 py-0.5 bg-chocolate rounded text-xs font-mono text-pitch-green-light border border-white/5">
                         {pred.suggestedScore}
                       </span>
                     )}
                   </div>
-                  <div className="flex-1 text-left md:flex-initial">
-                    <p className="text-lg font-bold text-white truncate">{pred.awayTeam}</p>
+                  <div className="flex-1 flex items-center justify-start gap-3 md:flex-initial">
+                    <TeamLogo teamName={pred.awayTeam} className="w-8 h-8 rounded-full object-cover bg-gray-700" />
+                    <p className="text-lg font-bold text-white truncate text-left">{pred.awayTeam}</p>
                   </div>
                 </div>
                 <div className="mt-4 bg-black/20 p-3 rounded-xl border border-white/5">
@@ -68,7 +71,7 @@ const PredictionsDisplay: React.FC<PredictionsDisplayProps> = ({ predictions, en
                 <div className="text-center">
                   <p className="text-[10px] font-bold text-gray-500 uppercase mb-1">{t('match.ai_pick')}</p>
                   <p className={`text-sm font-bold ${
-                    pred.predictedOutcome === 'Home Win' ? 'text-emerald-400' : 
+                    pred.predictedOutcome === 'Home Win' ? 'text-pitch-green-light' : 
                     pred.predictedOutcome === 'Away Win' ? 'text-cyan-400' : 'text-amber-400'
                   }`}>
                     {pred.predictedOutcome}

@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { TacticalData } from '../types';
+import TacticsBoard from './TacticsBoard';
 
 interface TacticsDisplayProps {
   tacticalData: TacticalData | null;
@@ -21,9 +22,13 @@ const TacticsDisplay: React.FC<TacticsDisplayProps> = ({ tacticalData, leagueNam
       </h3>
       <h4 className="text-xl font-semibold text-gray-200 mb-6">{formationName}</h4>
 
-      <div className="prose prose-lg prose-invert max-w-none text-gray-300 leading-relaxed">
+      <div className="prose prose-lg prose-invert max-w-none text-gray-300 leading-relaxed mb-8">
           <h5 className="text-lg font-semibold text-gray-100 mb-2">Formation Overview</h5>
           <p>{description}</p>
+      </div>
+
+      <div className="max-w-md mx-auto">
+          <TacticsBoard players={tacticalData.players} />
       </div>
     </article>
   );

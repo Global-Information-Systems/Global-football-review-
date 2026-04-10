@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { Nation } from '../types';
 import { NATIONS } from '../constants';
+import { TeamLogo } from './TeamLogo';
 
 interface NationDatabaseProps {
   onSelectNation: (nation: Nation) => void;
@@ -81,7 +82,10 @@ const NationDatabase: React.FC<NationDatabaseProps> = ({ onSelectNation }) => {
                 onKeyPress={(e) => e.key === 'Enter' && onSelectNation(nation)}
                 aria-label={`Select ${nation.name}`}
               >
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{nation.name}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white flex items-center gap-3">
+                  <TeamLogo teamName={nation.name} className="w-6 h-6 rounded-full object-cover" />
+                  {nation.name}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{nation.confederation}</td>
               </tr>
             ))}
